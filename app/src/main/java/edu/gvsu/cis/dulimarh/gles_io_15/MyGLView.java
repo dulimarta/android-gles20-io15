@@ -15,8 +15,8 @@ import javax.microedition.khronos.opengles.GL10;
 public class MyGLView extends GLSurfaceView implements GLSurfaceView
         .Renderer {
 
-    private static final float TRI_SPEED = 0.012f; /* 12 degs/sec */
-    private static final float TORUS_SPEED = 0.060f; /* 60 degs/sec */
+    private static final float TRI_SPEED = 0.120f;
+    private static final float TORUS_SPEED = 0.06f;
     private Triangle tri_one;
     private Torus tor_one;
     private float[] tri_cf, torus_cf;
@@ -42,10 +42,11 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
 
     private void updateCoordFrames(long now, long delta)
     {
-        //Matrix.rotateM(tri_cf, 0, TRI_SPEED * delta, 0, 0, 1);
+        Matrix.setIdentityM(tri_cf, 0);
+        Matrix.translateM(tri_cf, 0, 0.6f, 0, 0);
         tri_angle += TRI_SPEED * delta;
-        tri_scale = 0.8f + 0.2f * (float) Math.cos(now/160);
-        Matrix.setRotateM(tri_cf, 0, tri_angle, 0, 0, 1);
+        tri_scale = 0.6f + 0.2f * (float) Math.cos(now/160);
+        Matrix.rotateM(tri_cf, 0, tri_angle, 0, 0, 1);
         Matrix.scaleM(tri_cf, 0, tri_scale, tri_scale, 1);
 
         Matrix.rotateM(torus_cf, 0, -TORUS_SPEED * delta, 0, 0, 1);
@@ -84,17 +85,19 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
         lastMilliSec = now;
         gl10.glClear(GLES10.GL_COLOR_BUFFER_BIT | GLES10
                 .GL_DEPTH_BUFFER_BIT);
-        gl10.glEnableClientState(GL10.GL_COLOR_ARRAY);
-        
+
+
+        gl10.glColor4f(0.6f, 0.6f, 0.2f, 1.0f);
+        gl10.glPushMatrix();
+        gl10.glMultMatrixf(torus_cf, 0);
+
         gl10.glPushMatrix();
         gl10.glMultMatrixf(tri_cf, 0);
+        gl10.glEnableClientState(GL10.GL_COLOR_ARRAY);
         tri_one.draw();
         gl10.glPopMatrix();
 
         gl10.glDisableClientState(GL10.GL_COLOR_ARRAY);
-        gl10.glColor4f(0.6f, 0.6f, 0.2f, 1.0f);
-        gl10.glPushMatrix();
-        gl10.glMultMatrixf(torus_cf, 0);
         tor_one.draw();
         gl10.glPopMatrix();
     }
