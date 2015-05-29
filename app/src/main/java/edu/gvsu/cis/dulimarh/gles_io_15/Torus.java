@@ -21,11 +21,13 @@ public class Torus  {
     private int[] buffers;
     private FloatBuffer vBuf, nBuf;
     private ShortBuffer[] iBuf;
+    private Material mat;
     private float[] tmp;
 
-    public Torus(float RAD, float rad, int majorRings,
+    public Torus(Material mat, float RAD, float rad, int majorRings,
                  int minorRings,
                  int span) {
+        this.mat = mat;
         final int N = majorRings * minorRings;
 
         ByteBuffer buff;

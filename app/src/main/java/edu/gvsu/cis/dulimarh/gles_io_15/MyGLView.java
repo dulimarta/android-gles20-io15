@@ -17,14 +17,15 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
 
     private static final float TRI_SPEED = 0.120f;
     private static final float TORUS_SPEED = 0.06f;
-    private Triangle tri_one;
-    private Torus tor_one;
-    private float[] tri_cf, torus_cf;
-    private float[] projectionMat, modelviewMat, tmpMat;
+    private Wheel w;
+    private Arm a;
+    private SwingFrame sf;
+    private float[] wheel_cf, frame_cf, arm_cf;
+    private float[] projectionMat, modelviewMat, tmpMat1, tmpMat2;
     private long lastMilliSec;
-    private float tri_angle, tri_scale;
     private Context context;
     private Shader shNoColor, shColorArray;
+
     public MyGLView(Context context) {
         super(context);
         this.context = context;
@@ -38,55 +39,71 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
     }
 
     private void init() {
-        tri_cf = new float[16];
-        torus_cf = new float[16];
-        Matrix.setIdentityM(tri_cf, 0);
-        Matrix.setIdentityM(torus_cf, 0);
+        wheel_cf = new float[16];
+        Matrix.setIdentityM(wheel_cf, 0);
+
+        arm_cf = new float[16];
+        Matrix.setIdentityM(arm_cf, 0);
+
+        frame_cf = new float[16];
+        Matrix.setIdentityM(frame_cf, 0);
+        Matrix.translateM(frame_cf, 0, 0, 0, 20);
 
         setEGLContextClientVersion(2); /* Use OpenGL ES 2.0 */
         setRenderer(this);
         projectionMat = new float[16];
         modelviewMat = new float[16];
-        tmpMat = new float[16];
+        tmpMat1 = new float[16];
+        tmpMat2 = new float[16];
     }
 
     private void updateCoordFrames(long now, long delta)
     {
-        Matrix.setIdentityM(tri_cf, 0);
-        Matrix.translateM(tri_cf, 0, 0.6f, 0, 0);
-        tri_angle += TRI_SPEED * delta;
-        tri_scale = 0.6f + 0.2f * (float) Math.cos(now/160);
-        Matrix.rotateM(tri_cf, 0, tri_angle, 0, 0, 1);
-        Matrix.scaleM(tri_cf, 0, tri_scale, tri_scale, 1);
-
-        Matrix.rotateM(torus_cf, 0, -TORUS_SPEED * delta, 0, 0, 1);
+        Matrix.rotateM(wheel_cf, 0, 72.0f * delta / 1000.0f,
+                0.0f, 0.0f, 1.0f);
     }
 
     @Override
     public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
         GLES20.glClearColor(0.05f, 0.203f, 0.42f, 0.0f);
-        tri_one = new Triangle();
-        tor_one = new Torus(0.6f, 0.15f, 30, 20, 270);
+        w = new Wheel();
+        a = new Arm();
+        sf = new SwingFrame();
         shNoColor = new Shader(context, "vs_no_color.shdr", "fs_fixed.shdr");
         shColorArray = new Shader(context, "vs_color_array.shdr", "fs_passthru.shdr");
 
         //GLES20.glEnableClientState(GLES20.GL_VERTEX_ARRAY);
         lastMilliSec = System.currentTimeMillis();
+        Matrix.setIdentityM(wheel_cf, 0);
+            /* The wheel axis is initially on the Z-axis, we should
+             * turn it so it'll spin on the Y-axis */
+        Matrix.rotateM(wheel_cf, 0, 90, 1, 0, 0);
+            /* translate the wheel so its center is at the end of the
+             * arm */
+        Matrix.translateM(wheel_cf, 0, 0, -20, 0);
     }
 
     @Override
     public void onSurfaceChanged(GL10 gl10, int width, int height) {
         float ratio;
-        Matrix.setIdentityM(projectionMat, 0);
-        if (width > height) {
-            ratio = (float) width/height;
-            Matrix.orthoM(projectionMat, 0, -ratio, ratio, -1.0f, +1.0f, -1.0f, +1.0f);
-        }
-        else {
-            ratio = (float) height/width;
-            Matrix.orthoM(projectionMat, 0, -1.0f, +1.0f, -ratio, ratio, -1.0f, +1.0f);
-        }
-        Matrix.setIdentityM(modelviewMat, 0);
+//        Matrix.setIdentityM(projectionMat, 0);
+//        if (width > height) {
+//            ratio = (float) width/height;
+//            Matrix.orthoM(projectionMat, 0, -ratio, ratio, -1.0f, +1.0f, -1.0f, +1.0f);
+//        }
+//        else {
+//            ratio = (float) height/width;
+//            Matrix.orthoM(projectionMat, 0, -1.0f, +1.0f, -ratio, ratio, -1.0f, +1.0f);
+//        }
+//        Matrix.setIdentityM(modelviewMat, 0);
+        GLES20.glViewport(0, 0, width, height);
+        Matrix.perspectiveM(projectionMat, 0, 60.0f,
+                (float) width / height, 0.01f, 100.0f);
+
+        Matrix.setLookAtM(modelviewMat, 0,
+                    /* eye */ 25.0f, 20.0f, 20.0f,
+                    /* center */ 0.0f, 0.0f, 10.0f,
+                    /* up */ 0.0f, 0.0f, 1.0f);
     }
 
     @Override
@@ -97,8 +114,16 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20
                 .GL_DEPTH_BUFFER_BIT);
 
-        Matrix.multiplyMM(tmpMat, 0, torus_cf, 0, tri_cf, 0);
-        tri_one.draw(shColorArray, projectionMat, modelviewMat, tmpMat);
-        tor_one.draw(shNoColor, projectionMat, modelviewMat, torus_cf);
+        //Matrix.multiplyMM(tmpMat, 0, torus_cf, 0, tri_cf, 0);
+        w.draw(shNoColor, projectionMat, modelviewMat, wheel_cf);
+        sf.draw(shNoColor, projectionMat, modelviewMat, frame_cf);
+        /* tmp1 = frame_cf * arm_cf */
+        Matrix.multiplyMM(tmpMat1, 0, frame_cf, 0, arm_cf, 0);
+        a.draw(shNoColor, projectionMat, modelviewMat, tmpMat1);
+
+        /* tmp2 = tmp1 * wheel_cf OR
+         * tmp2 = frame_cf & arm_cf & wheel_cf */
+        Matrix.multiplyMM(tmpMat2, 0, tmpMat1, 0, wheel_cf, 0);
+        w.draw(shNoColor, projectionMat, modelviewMat, tmpMat2);
     }
 }
