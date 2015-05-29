@@ -24,7 +24,7 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
     private float[] projectionMat, modelviewMat, tmpMat1, tmpMat2;
     private long lastMilliSec;
     private Context context;
-    private Shader shNoColor, shColorArray;
+    private Shader shMatColor;
 
     public MyGLView(Context context) {
         super(context);
@@ -69,10 +69,9 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
         w = new Wheel();
         a = new Arm();
         sf = new SwingFrame();
-        shNoColor = new Shader(context, "vs_no_color.shdr", "fs_fixed.shdr");
-        shColorArray = new Shader(context, "vs_color_array.shdr", "fs_passthru.shdr");
+        shMatColor = new Shader(context, "vs_colormat.shdr",
+                "fs_passthru.shdr");
 
-        //GLES20.glEnableClientState(GLES20.GL_VERTEX_ARRAY);
         lastMilliSec = System.currentTimeMillis();
         Matrix.setIdentityM(wheel_cf, 0);
             /* The wheel axis is initially on the Z-axis, we should
@@ -81,21 +80,13 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
             /* translate the wheel so its center is at the end of the
              * arm */
         Matrix.translateM(wheel_cf, 0, 0, -20, 0);
+        GLES20.glEnable(GLES20.GL_CULL_FACE);
+        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
     }
 
     @Override
     public void onSurfaceChanged(GL10 gl10, int width, int height) {
         float ratio;
-//        Matrix.setIdentityM(projectionMat, 0);
-//        if (width > height) {
-//            ratio = (float) width/height;
-//            Matrix.orthoM(projectionMat, 0, -ratio, ratio, -1.0f, +1.0f, -1.0f, +1.0f);
-//        }
-//        else {
-//            ratio = (float) height/width;
-//            Matrix.orthoM(projectionMat, 0, -1.0f, +1.0f, -ratio, ratio, -1.0f, +1.0f);
-//        }
-//        Matrix.setIdentityM(modelviewMat, 0);
         GLES20.glViewport(0, 0, width, height);
         Matrix.perspectiveM(projectionMat, 0, 60.0f,
                 (float) width / height, 0.01f, 100.0f);
@@ -114,16 +105,14 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20
                 .GL_DEPTH_BUFFER_BIT);
 
-        //Matrix.multiplyMM(tmpMat, 0, torus_cf, 0, tri_cf, 0);
-        w.draw(shNoColor, projectionMat, modelviewMat, wheel_cf);
-        sf.draw(shNoColor, projectionMat, modelviewMat, frame_cf);
+        sf.draw(shMatColor, projectionMat, modelviewMat, frame_cf);
         /* tmp1 = frame_cf * arm_cf */
         Matrix.multiplyMM(tmpMat1, 0, frame_cf, 0, arm_cf, 0);
-        a.draw(shNoColor, projectionMat, modelviewMat, tmpMat1);
+        a.draw(shMatColor, projectionMat, modelviewMat, tmpMat1);
 
         /* tmp2 = tmp1 * wheel_cf OR
          * tmp2 = frame_cf & arm_cf & wheel_cf */
         Matrix.multiplyMM(tmpMat2, 0, tmpMat1, 0, wheel_cf, 0);
-        w.draw(shNoColor, projectionMat, modelviewMat, tmpMat2);
+        w.draw(shMatColor, projectionMat, modelviewMat, tmpMat2);
     }
 }

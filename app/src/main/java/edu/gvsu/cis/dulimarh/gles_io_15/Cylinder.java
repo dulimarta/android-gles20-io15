@@ -150,6 +150,9 @@ public class Cylinder {
         Matrix.multiplyMM(tmp, 0, mvMat, 0, coordFrame, 0);
         GLES20.glUniformMatrix4fv(handle, 1, false, tmp, 0);
 
+        handle = GLES20.glGetUniformLocation(shaderId, "u_matDiffuse");
+        GLES20.glUniform4fv(handle, 1, mat.diffuse, 0);
+
         handle = GLES20.glGetAttribLocation(shaderId, "a_pos");
         GLES20.glEnableVertexAttribArray(handle);
 
