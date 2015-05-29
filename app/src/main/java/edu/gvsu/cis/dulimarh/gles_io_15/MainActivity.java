@@ -8,10 +8,25 @@ import android.view.MenuItem;
 
 public class MainActivity extends ActionBarActivity {
 
+    private MyGLView glView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        glView = (MyGLView) findViewById(R.id.glview);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        glView.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        glView.onPause();
     }
 
     @Override

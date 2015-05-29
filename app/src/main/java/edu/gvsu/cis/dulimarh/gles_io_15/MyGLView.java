@@ -14,7 +14,8 @@ import javax.microedition.khronos.opengles.GL10;
 public class MyGLView extends GLSurfaceView implements GLSurfaceView
         .Renderer {
 
-    private Triangle tr_one;
+    private Triangle tri_one;
+    private Torus tor_one;
 
     public MyGLView(Context context) {
         super(context);
@@ -33,7 +34,10 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
     @Override
     public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
         gl10.glClearColor(0.05f, 0.203f, 0.42f, 0.0f);
-        tr_one = new Triangle();
+        tri_one = new Triangle();
+        tor_one = new Torus(0.6f, 0.15f, 30, 20, 360);
+
+        gl10.glEnableClientState(GL10.GL_VERTEX_ARRAY);
     }
 
     @Override
@@ -56,8 +60,11 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
     public void onDrawFrame(GL10 gl10) {
         gl10.glClear(GLES10.GL_COLOR_BUFFER_BIT | GLES10
                 .GL_DEPTH_BUFFER_BIT);
-        gl10.glEnableClientState(GL10.GL_VERTEX_ARRAY);
         gl10.glEnableClientState(GL10.GL_COLOR_ARRAY);
-        tr_one.draw();
+        tri_one.draw();
+
+        gl10.glDisableClientState(GL10.GL_COLOR_ARRAY);
+        gl10.glColor4f(0.6f, 0.6f, 0.2f, 1.0f);
+        tor_one.draw();
     }
 }
