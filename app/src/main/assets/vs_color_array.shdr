@@ -1,0 +1,10 @@
+attribute vec4 a_pos;
+attribute vec4 a_col;
+
+uniform mat4 u_projectionMatrix, u_modelViewMatrix;
+varying vec4 f_color;
+
+void main() {
+   f_color = a_col;
+   gl_Position = u_projectionMatrix * u_modelViewMatrix * a_pos;
+}

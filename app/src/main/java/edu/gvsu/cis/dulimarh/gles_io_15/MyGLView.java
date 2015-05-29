@@ -1,7 +1,7 @@
 package edu.gvsu.cis.dulimarh.gles_io_15;
 
 import android.content.Context;
-import android.opengl.GLES10;
+import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.AttributeSet;
@@ -20,15 +20,20 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
     private Triangle tri_one;
     private Torus tor_one;
     private float[] tri_cf, torus_cf;
+    private float[] projectionMat, modelviewMat, tmpMat;
     private long lastMilliSec;
     private float tri_angle, tri_scale;
+    private Context context;
+    private Shader shNoColor, shColorArray;
     public MyGLView(Context context) {
         super(context);
+        this.context = context;
         init();
     }
 
     public MyGLView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        this.context = context;
         init();
     }
 
@@ -37,7 +42,12 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
         torus_cf = new float[16];
         Matrix.setIdentityM(tri_cf, 0);
         Matrix.setIdentityM(torus_cf, 0);
+
+        setEGLContextClientVersion(2); /* Use OpenGL ES 2.0 */
         setRenderer(this);
+        projectionMat = new float[16];
+        modelviewMat = new float[16];
+        tmpMat = new float[16];
     }
 
     private void updateCoordFrames(long now, long delta)
@@ -54,28 +64,29 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
 
     @Override
     public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
-        gl10.glClearColor(0.05f, 0.203f, 0.42f, 0.0f);
+        GLES20.glClearColor(0.05f, 0.203f, 0.42f, 0.0f);
         tri_one = new Triangle();
         tor_one = new Torus(0.6f, 0.15f, 30, 20, 270);
+        shNoColor = new Shader(context, "vs_no_color.shdr", "fs_fixed.shdr");
+        shColorArray = new Shader(context, "vs_color_array.shdr", "fs_passthru.shdr");
 
-        gl10.glEnableClientState(GL10.GL_VERTEX_ARRAY);
+        //GLES20.glEnableClientState(GLES20.GL_VERTEX_ARRAY);
         lastMilliSec = System.currentTimeMillis();
     }
 
     @Override
     public void onSurfaceChanged(GL10 gl10, int width, int height) {
         float ratio;
-        gl10.glMatrixMode(GL10.GL_PROJECTION);
-        gl10.glLoadIdentity();
+        Matrix.setIdentityM(projectionMat, 0);
         if (width > height) {
             ratio = (float) width/height;
-            gl10.glOrthof(-ratio, ratio, -1.0f, +1.0f, -1.0f, +1.0f);
+            Matrix.orthoM(projectionMat, 0, -ratio, ratio, -1.0f, +1.0f, -1.0f, +1.0f);
         }
         else {
             ratio = (float) height/width;
-            gl10.glOrthof(-1.0f, +1.0f, -ratio, ratio, -1.0f, +1.0f);
+            Matrix.orthoM(projectionMat, 0, -1.0f, +1.0f, -ratio, ratio, -1.0f, +1.0f);
         }
-        gl10.glMatrixMode(GL10.GL_MODELVIEW);
+        Matrix.setIdentityM(modelviewMat, 0);
     }
 
     @Override
@@ -83,22 +94,11 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
         long now = System.currentTimeMillis();
         updateCoordFrames(now, now - lastMilliSec);
         lastMilliSec = now;
-        gl10.glClear(GLES10.GL_COLOR_BUFFER_BIT | GLES10
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20
                 .GL_DEPTH_BUFFER_BIT);
 
-
-        gl10.glColor4f(0.6f, 0.6f, 0.2f, 1.0f);
-        gl10.glPushMatrix();
-        gl10.glMultMatrixf(torus_cf, 0);
-
-        gl10.glPushMatrix();
-        gl10.glMultMatrixf(tri_cf, 0);
-        gl10.glEnableClientState(GL10.GL_COLOR_ARRAY);
-        tri_one.draw();
-        gl10.glPopMatrix();
-
-        gl10.glDisableClientState(GL10.GL_COLOR_ARRAY);
-        tor_one.draw();
-        gl10.glPopMatrix();
+        Matrix.multiplyMM(tmpMat, 0, torus_cf, 0, tri_cf, 0);
+        tri_one.draw(shColorArray, projectionMat, modelviewMat, tmpMat);
+        tor_one.draw(shNoColor, projectionMat, modelviewMat, torus_cf);
     }
 }

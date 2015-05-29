@@ -1,5 +1,8 @@
 package edu.gvsu.cis.dulimarh.gles_io_15;
 
+import android.opengl.GLES20;
+import android.opengl.Matrix;
+
 import static android.opengl.GLES10.*;
 
 import java.nio.ByteBuffer;
@@ -13,6 +16,7 @@ public class Triangle {
     
     private FloatBuffer mVertex, mColor;
     private ShortBuffer mIndex;
+    private float[] tmp;
     /* The order of vertices given below DOES NOT have to be in clockwise
      * nor counter clockwise order. But the order of the indices MUST */
     
@@ -69,21 +73,48 @@ public class Triangle {
         mVertex.position(0);
         mColor.position(0);
         mIndex.position(0);
+
+        tmp = new float[16];
     }
     
-    public void draw()
+    public void draw(Shader sh, float[] projMat, float[] mvMat, float[]
+            coordFrame)
     {
-        glVertexPointer(
-                3           /* number of coordinates per vertex */, 
-                GL_FLOAT    /* type of each vertex */, 
+        final int shaderId = sh.getId();
+        GLES20.glUseProgram(shaderId);
+        int handle;
+        handle = GLES20.glGetUniformLocation(shaderId,
+                "u_projectionMatrix");
+        GLES20.glUniformMatrix4fv(handle,
+                1, /* count */
+                false, /* matrix is NOT transposed */
+                projMat,
+                0); /* offset */
+        handle = GLES20.glGetUniformLocation(shaderId,
+                "u_modelViewMatrix");
+        Matrix.multiplyMM(tmp, 0, mvMat, 0, coordFrame, 0);
+        GLES20.glUniformMatrix4fv(handle, 1, false, tmp, 0);
+
+        handle = GLES20.glGetAttribLocation(shaderId, "a_pos");
+        GLES20.glEnableVertexAttribArray(handle);
+        GLES20.glVertexAttribPointer(handle,
+                3           /* number of coordinates per vertex */,
+                GL_FLOAT    /* type of each vertex */,
+                false,
                 0           /* stride */,
                 mVertex     /* memory location */);
-        glColorPointer(4 /* number of components per color, must be 4 */, 
-                GL_FLOAT, 0, mColor);
-        glDrawElements(
-                GL_TRIANGLES, /* mode */ 
-                order.length       /* number of elements */, 
-                GL_UNSIGNED_SHORT  /* type of each index */, 
+        handle = GLES20.glGetAttribLocation(shaderId, "a_col");
+        GLES20.glEnableVertexAttribArray(handle);
+        GLES20.glVertexAttribPointer(handle,
+                4           /* number of coordinates per vertex */,
+                GL_FLOAT    /* type of each vertex */,
+                false,
+                0           /* stride */,
+                mColor     /* memory location */);
+        GLES20.glDrawElements(
+                GL_TRIANGLES, /* mode */
+                order.length       /* number of elements */,
+                GL_UNSIGNED_SHORT  /* type of each index */,
                 mIndex);
     }
 }

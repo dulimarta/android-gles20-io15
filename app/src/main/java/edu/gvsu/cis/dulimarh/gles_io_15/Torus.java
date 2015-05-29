@@ -1,6 +1,9 @@
 package edu.gvsu.cis.dulimarh.gles_io_15;
 
 
+import android.opengl.GLES20;
+import android.opengl.Matrix;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -18,6 +21,8 @@ public class Torus  {
     private int[] buffers;
     private FloatBuffer vBuf, nBuf;
     private ShortBuffer[] iBuf;
+    private float[] tmp;
+
     public Torus(float RAD, float rad, int majorRings,
                  int minorRings,
                  int span) {
@@ -95,20 +100,36 @@ public class Torus  {
         nBuf.rewind();
         for (ShortBuffer ib : iBuf)
             ib.rewind();
-
+        tmp = new float[16];
     }
 
 
-    public void draw() {
+    public void draw(Shader sh, float[] projMat, float[] mvMat, float[]
+            coordFrame) {
+        final int shaderId = sh.getId();
+        GLES20.glUseProgram(shaderId);
+        int handle;
+        handle = GLES20.glGetUniformLocation(shaderId,
+                "u_projectionMatrix");
+        GLES20.glUniformMatrix4fv(handle,
+                1, /* count */
+                false, /* matrix is NOT transposed */
+                projMat,
+                0); /* offset */
+        handle = GLES20.glGetUniformLocation(shaderId,
+                "u_modelViewMatrix");
+        Matrix.multiplyMM(tmp, 0, mvMat, 0, coordFrame, 0);
+        GLES20.glUniformMatrix4fv(handle, 1, false, tmp, 0);
 
-        /* obtain a handle to the uniform variable in the shader */
-        /* obtain a handle to the vertex shader attribute vPos */
-        glVertexPointer(3, GL_FLOAT, 0, vBuf);
+        handle = GLES20.glGetAttribLocation(shaderId, "a_pos");
+        GLES20.glEnableVertexAttribArray(handle);
+
+        GLES20.glVertexAttribPointer(handle, 3, GL_FLOAT, false, 0, vBuf);
 
         final int N = 2 * majorRings; // + (fullTorus ? 2 : 0);
         for (int k = 0; k < minorRings; k++) {
             /* each triangle strip must be rendered using a separate call */
-            glDrawElements(GL_TRIANGLE_STRIP, N, GL_UNSIGNED_SHORT,
+            GLES20.glDrawElements(GL_TRIANGLE_STRIP, N, GL_UNSIGNED_SHORT,
                     iBuf[k]);
         }
     }
