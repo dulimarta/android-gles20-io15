@@ -117,4 +117,8 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
         Matrix.multiplyMM(tmpMat2, 0, tmpMat1, 0, wheel_cf, 0);
         w.draw(shPhong, projectionMat, modelviewMat, tmpMat2);
     }
+
+    public void onRotationChanged(float[] rot) {
+        System.arraycopy(rot, 0, modelviewMat, 0, 12);
+    }
 }
