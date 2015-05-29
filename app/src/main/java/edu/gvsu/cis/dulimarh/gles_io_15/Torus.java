@@ -22,7 +22,7 @@ public class Torus  {
     private FloatBuffer vBuf, nBuf;
     private ShortBuffer[] iBuf;
     private Material mat;
-    private float[] tmp;
+    private float[] tmp, tmpNormal;
 
     public Torus(Material mat, float RAD, float rad, int majorRings,
                  int minorRings,
@@ -103,6 +103,7 @@ public class Torus  {
         for (ShortBuffer ib : iBuf)
             ib.rewind();
         tmp = new float[16];
+        tmpNormal = new float[16];
     }
 
 
@@ -123,10 +124,26 @@ public class Torus  {
         Matrix.multiplyMM(tmp, 0, mvMat, 0, coordFrame, 0);
         GLES20.glUniformMatrix4fv(handle, 1, false, tmp, 0);
 
+        Matrix.invertM(tmpNormal, 0, tmp, 0);
+        Matrix.transposeM(tmp, 0, tmpNormal, 0);
+        handle = GLES20.glGetUniformLocation(shaderId,
+                "u_normalMatrix");
+        GLES20.glUniformMatrix4fv(handle, 1, false, tmp, 0);
+
+        handle = GLES20.glGetUniformLocation(shaderId, "u_matAmbient");
+        GLES20.glUniform4fv(handle, 1, mat.ambient, 0);
+        handle = GLES20.glGetUniformLocation(shaderId, "u_matDiffuse");
+        GLES20.glUniform4fv(handle, 1, mat.diffuse, 0);
+        handle = GLES20.glGetUniformLocation(shaderId, "u_matSpecular");
+        GLES20.glUniform4fv(handle, 1, mat.specular, 0);
+
         handle = GLES20.glGetAttribLocation(shaderId, "a_pos");
         GLES20.glEnableVertexAttribArray(handle);
-
         GLES20.glVertexAttribPointer(handle, 3, GL_FLOAT, false, 0, vBuf);
+
+        handle = GLES20.glGetAttribLocation(shaderId, "a_normal");
+        GLES20.glEnableVertexAttribArray(handle);
+        GLES20.glVertexAttribPointer(handle, 3, GL_FLOAT, false, 0, nBuf);
 
         final int N = 2 * majorRings; // + (fullTorus ? 2 : 0);
         for (int k = 0; k < minorRings; k++) {

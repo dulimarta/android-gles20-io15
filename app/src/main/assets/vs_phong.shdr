@@ -1,0 +1,39 @@
+attribute vec3 a_pos;
+attribute vec3 a_normal;
+
+uniform mat4 u_projectionMatrix, u_modelViewMatrix, u_normalMatrix;
+varying vec4 f_color;
+
+uniform vec4 u_matAmbient;
+uniform vec4 u_matDiffuse;
+uniform vec4 u_matSpecular;
+
+const vec4 light_diffuse = vec4 (1.0, 1.0, 1.0, 1.0);
+const vec4 light_specular = vec4 (1.0, 1.0, 1.0, 1.0);
+const vec4 light_pos = vec4 (1, 0, 6, 1.0);
+
+void main() {
+   vec4 light_dir = light_pos - vec4(a_pos, 1.0);
+   vec4 halfway = light_dir;
+
+   /* eye vector is now 0,0,1 */
+   halfway.z += 1.0;
+   halfway = normalize(halfway);
+   light_dir = normalize(light_dir);
+
+   vec4 ec_normal = u_normalMatrix * vec4(a_normal, 1.0);
+   /* determine the diffuse lighting */
+   float n_dot_l = max (0.0, dot(ec_normal, light_dir));
+   /* determine the specular lighting */
+   float n_dot_h = max (0.0, dot(ec_normal, halfway));
+
+   f_color = u_matAmbient;
+   f_color += n_dot_l * light_diffuse * u_matDiffuse;
+   if (n_dot_h > 0.0)
+      f_color += pow (n_dot_h, 8.0) * light_specular *
+      u_matSpecular;
+   gl_Position = u_projectionMatrix * u_modelViewMatrix *
+            vec4(a_pos, 1.0);
+}
+
+

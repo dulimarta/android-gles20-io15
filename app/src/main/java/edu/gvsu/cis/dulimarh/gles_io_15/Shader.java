@@ -79,7 +79,7 @@ public class Shader {
             Scanner inp = new Scanner(context.getAssets().open(fname));
             StringBuffer code = new StringBuffer();
             while (inp.hasNextLine())
-                code.append(inp.nextLine());
+                code.append(inp.nextLine() + "\n");
             inp.close();
             handle = glCreateShader(type);
             if (handle != 0) {

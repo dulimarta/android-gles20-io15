@@ -20,20 +20,14 @@ public class Cylinder {
     private final int N_POINTS = 20;
     private FloatBuffer vBuf, nBuf;
     private IntBuffer iBuf;
-    private float[] tmp;
-//    private Shader shader;
+    private float[] tmp, tmpNormal;
     private Material mat;
-//    private Map<String,Buffer> bMap;
-//    private Map<String,float[]> uniformMap;
 
     public Cylinder(Material mat, float topRad, float botRad,
                     float height)
     {
-//        shader = sh;
         this.mat = mat;
         double delta = 2 * Math.PI / N_POINTS;
-//        bMap = new HashMap<String, Buffer>();
-//        uniformMap = new HashMap<String,float[]>();
         ByteBuffer buff;
         /* 3 values per vertex, 4 types per value */
         buff = ByteBuffer.allocateDirect(3 * (2 * N_POINTS + 1) * 4);
@@ -122,14 +116,8 @@ public class Cylinder {
         vBuf.rewind();
         nBuf.rewind();
         iBuf.rewind();
-//        bMap.put("a_position", vBuf);
-//        bMap.put("a_normal", nBuf);
-//        if (this.mat != null) {
-//            uniformMap.put("u_materialAmbient", this.mat.ambient);
-//            uniformMap.put("u_materialDiffuse", this.mat.diffuse);
-//            uniformMap.put("u_materialSpecular", this.mat.specular);
-//        }
         tmp = new float[16];
+        tmpNormal = new float[16];
     }
 
     public void draw(Shader sh, float[] projMat, float[] mvMat, float[]
@@ -150,14 +138,26 @@ public class Cylinder {
         Matrix.multiplyMM(tmp, 0, mvMat, 0, coordFrame, 0);
         GLES20.glUniformMatrix4fv(handle, 1, false, tmp, 0);
 
+        Matrix.invertM(tmpNormal, 0, tmp, 0);
+        Matrix.transposeM(tmp, 0, tmpNormal, 0);
+        handle = GLES20.glGetUniformLocation(shaderId,
+                "u_normalMatrix");
+        GLES20.glUniformMatrix4fv(handle, 1, false, tmp, 0);
+
+        handle = GLES20.glGetUniformLocation(shaderId, "u_matAmbient");
+        GLES20.glUniform4fv(handle, 1, mat.ambient, 0);
         handle = GLES20.glGetUniformLocation(shaderId, "u_matDiffuse");
         GLES20.glUniform4fv(handle, 1, mat.diffuse, 0);
+        handle = GLES20.glGetUniformLocation(shaderId, "u_matSpecular");
+        GLES20.glUniform4fv(handle, 1, mat.specular, 0);
 
         handle = GLES20.glGetAttribLocation(shaderId, "a_pos");
         GLES20.glEnableVertexAttribArray(handle);
-
         GLES20.glVertexAttribPointer(handle, 3, GL_FLOAT, false, 0, vBuf);
 
+        handle = GLES20.glGetAttribLocation(shaderId, "a_normal");
+        GLES20.glEnableVertexAttribArray(handle);
+        GLES20.glVertexAttribPointer(handle, 3, GL_FLOAT, false, 0, nBuf);
 
         iBuf.rewind();
         GLES20.glDrawElements(GLES20.GL_TRIANGLE_STRIP, 2 * N_POINTS + 2,

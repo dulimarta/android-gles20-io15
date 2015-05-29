@@ -21,10 +21,11 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
     private Arm a;
     private SwingFrame sf;
     private float[] wheel_cf, frame_cf, arm_cf;
-    private float[] projectionMat, modelviewMat, tmpMat1, tmpMat2;
+    private float[] projectionMat, modelviewMat, normalMat;
+    private float[] tmpMat1, tmpMat2;
     private long lastMilliSec;
     private Context context;
-    private Shader shMatColor;
+    private Shader shPhong;
 
     public MyGLView(Context context) {
         super(context);
@@ -53,6 +54,7 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
         setRenderer(this);
         projectionMat = new float[16];
         modelviewMat = new float[16];
+        normalMat = new float[16];
         tmpMat1 = new float[16];
         tmpMat2 = new float[16];
     }
@@ -69,7 +71,7 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
         w = new Wheel();
         a = new Arm();
         sf = new SwingFrame();
-        shMatColor = new Shader(context, "vs_colormat.shdr",
+        shPhong = new Shader(context, "vs_phong.shdr",
                 "fs_passthru.shdr");
 
         lastMilliSec = System.currentTimeMillis();
@@ -105,14 +107,14 @@ public class MyGLView extends GLSurfaceView implements GLSurfaceView
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20
                 .GL_DEPTH_BUFFER_BIT);
 
-        sf.draw(shMatColor, projectionMat, modelviewMat, frame_cf);
+        sf.draw(shPhong, projectionMat, modelviewMat, frame_cf);
         /* tmp1 = frame_cf * arm_cf */
         Matrix.multiplyMM(tmpMat1, 0, frame_cf, 0, arm_cf, 0);
-        a.draw(shMatColor, projectionMat, modelviewMat, tmpMat1);
+        a.draw(shPhong, projectionMat, modelviewMat, tmpMat1);
 
         /* tmp2 = tmp1 * wheel_cf OR
          * tmp2 = frame_cf & arm_cf & wheel_cf */
         Matrix.multiplyMM(tmpMat2, 0, tmpMat1, 0, wheel_cf, 0);
-        w.draw(shMatColor, projectionMat, modelviewMat, tmpMat2);
+        w.draw(shPhong, projectionMat, modelviewMat, tmpMat2);
     }
 }
